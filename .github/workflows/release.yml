@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: cargo install cargo-about --locked
+      - run: cargo about generate about.hbs > THIRD_PARTY_LICENSES.html
+      - uses: actions/upload-artifact@v7
+        with:
+          name: third-party-licenses
+          path: THIRD_PARTY_LICENSES.html
+
+  build:
+    needs: licenses
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            pre: sudo apt-get install -y musl-tools
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
+            pre: sudo apt-get install -y musl-tools
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            rustflags: "-C target-feature=+crt-static"
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - if: matrix.pre
+        run: ${{ matrix.pre }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: third-party-licenses
+      - run: cargo build --release --locked --target ${{ matrix.target }}
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
+          TARGET: ${{ matrix.target }}
+      - if: runner.os != 'Windows'
+        run: |
+          DIR="stargauge-$GITHUB_REF_NAME-$TARGET"
+          mkdir "$DIR"
+          cp "target/$TARGET/release/stargauge" LICENSE NOTICE README.md THIRD_PARTY_LICENSES.html "$DIR/"
+          tar -czf "$DIR.tar.gz" "$DIR"
+        env:
+          TARGET: ${{ matrix.target }}
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $dir = "stargauge-$env:GITHUB_REF_NAME-$env:TARGET"
+          New-Item -ItemType Directory -Path $dir | Out-Null
+          Copy-Item -Path "target/$env:TARGET/release/stargauge.exe", "LICENSE", "NOTICE", "README.md", "THIRD_PARTY_LICENSES.html" -Destination $dir
+          Compress-Archive -Path $dir -DestinationPath "$dir.zip"
+        env:
+          TARGET: ${{ matrix.target }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: stargauge-${{ matrix.target }}
+          path: stargauge-${{ github.ref_name }}-${{ matrix.target }}.*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: stargauge-*
+          path: dist
+          merge-multiple: true
+      - working-directory: dist
+        run: |
+          sha256sum stargauge-* > SHA256SUMS
+          gh release create "$TAG" --generate-notes stargauge-* SHA256SUMS
