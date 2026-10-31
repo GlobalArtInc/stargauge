@@ -1,0 +1,22 @@
+stargauge
+Copyright (C) 2026 GlobalArt
+
+stargauge is a Rust rewrite of Shotstars v4.13 (https://github.com/snooppr/shotstars),
+Copyright (C) 2024 Snooppr <snoopproject@protonmail.com>, licensed under the GNU General
+Public License version 3 or (at your option) any later version.
+
+Modified by GlobalArt in 2026: the program was translated from Python to Rust, renamed,
+given a new storage format and command-line interface, and had defects fixed. See CHANGELOG.md.
+
+stargauge is free software: you can redistribute it and/or modify it under the terms of the
+GNU General Public License as published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version. This program is distributed WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. See the LICENSE file for details.
+
+Third-party components:
+- Apache ECharts 6.1.0, Copyright The Apache Software Foundation, Apache License 2.0.
+  See assets/ECHARTS-LICENSE and assets/ECHARTS-NOTICE.
+  sha256 of assets/echarts.min.js: b66b25aeb4df84e33199dc21694014d336d222cbd9deb0e5a7c14bd6aa0d0fd0
+- Background images in images/backgrounds/ are taken from the Shotstars repository (Snooppr).
+- Rust crates compiled into release binaries: see THIRD_PARTY_LICENSES.html in each release archive.
