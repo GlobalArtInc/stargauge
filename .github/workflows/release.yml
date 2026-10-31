@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: cargo install cargo-about --locked
+      - run: cargo install cargo-about --locked --features cli
       - run: cargo about generate about.hbs > THIRD_PARTY_LICENSES.html
       - uses: actions/upload-artifact@v7
         with:
